@@ -1,0 +1,13 @@
+- hosts: fluentd
+  become: true
+  roles:
+    - role: astera-dp-fluentd
+  post_tasks:
+    - name: syslog write to fluentd socket, change config
+      ansible.builtin.lineinfile:
+        path: /etc/rsyslog.conf
+        line: "*.* @127.0.0.1:5140"
+    - name: syslog write to fluentd socket, restart service
+      ansible.builtin.service:
+        name: rsyslog
+        state: restarted

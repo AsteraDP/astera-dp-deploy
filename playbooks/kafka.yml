@@ -1,0 +1,63 @@
+---
+
+- name: apply common configuration
+  hosts:
+    - kafka-nodes
+    - zookeeper-nodes
+  become: true
+  become_user: root
+  roles:
+    - common
+    - astera-dp-fluentd
+  post_tasks:
+    - name: add td-agent user to proper groups
+      user:
+        name: "{{ fluentd_user }}"
+        groups: adm
+        append: yes
+    - name: syslog write to fluentd socket, change config
+      ansible.builtin.lineinfile:
+        path: /etc/rsyslog.conf
+        line: "*.* @127.0.0.1:5140"
+    - name: syslog write to fluentd socket, restart service
+      ansible.builtin.service:
+        name: rsyslog
+        state: restarted
+  tags:
+    - kafka
+    - zookeeper
+    - fluentd
+
+- name: apply zookeeper configuration
+  hosts:
+    - zookeeper-nodes
+  become: true
+  become_user: root
+  roles:
+    - astera-dp-java
+    - astera-dp-zookeeper
+  tags:
+    - zookeeper
+
+- name: apply kafka configuration
+  hosts:
+    - kafka-nodes
+  become: true
+  become_user: root
+  roles:
+    - astera-dp-java
+    - astera-dp-kafka
+  tags:
+    - kafka
+
+- name: apply kafka schema-registry configuration
+  hosts:
+    - kafka-schema-registry
+  become: true
+  become_user: root
+  roles:
+    - role: confluent.platform.schema_registry
+      stage: present
+  tags:
+    - schema_registry
+

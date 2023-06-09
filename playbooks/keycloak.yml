@@ -1,0 +1,24 @@
+---
+
+- name: apply common configuration
+  hosts:
+    - keycloak
+  become: true
+  become_user: root
+  roles:
+    - trombik.hosts
+
+- name: install keycloak
+  collections:
+    - middleware_automation.keycloak
+  hosts:
+    - keycloak
+  tasks:
+    - name: Keycloak Role
+      include_role:
+        name: keycloak
+  post_tasks:
+    - include_tasks: keycloak_realm.yml
+#   TODO: fix client import (secret is not imported, clientAuthenticatorType is not confidential)
+#   - include_tasks: keycloak_clients.yml
+#     with_items: "{{ keycloak_clients }}"

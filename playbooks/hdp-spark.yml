@@ -1,0 +1,19 @@
+---
+
+- name: apply common configuration
+  hosts:
+    - spark-nodes
+  become: true
+  become_user: root
+  roles:
+    - common
+    - trombik.hosts
+
+- name: apply spark configuration
+  hosts:
+    - spark-nodes
+  become: true
+  become_user: root
+  roles:
+    - geerlingguy.java
+    - iac-ansible-spark

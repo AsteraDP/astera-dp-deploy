@@ -1,0 +1,113 @@
+---
+
+- hosts:
+    - elasticsearch-logs
+  become: true
+  become_user: root
+  tasks:
+    - name: "Check if elasticsearch is installed or not"
+      package:
+        name: "{{ elastic_package_name }}"
+        state: present
+      check_mode: true
+      register: package_check
+
+    - name: Copy elasticsearch package to hosts
+      when: not es_use_repository | default('false') | bool and not package_check
+      copy:
+        src: "../files/elasticsearch_{{ elastic_version }}_amd64.deb"
+        dest: "/tmp/elasticsearch_{{ elastic_version }}_amd64.deb"
+        remote_src: false
+
+    - name: Install elasticsearch
+      when: not es_use_repository | default('false') | bool and not package_check
+      apt:
+        deb: "/tmp/elasticsearch_{{ elastic_version }}_amd64.deb"
+
+    - name: Clean up elasticsearch package
+      when: not es_use_repository | default('false') | bool and not package_check
+      file:
+        path: "/tmp/elasticsearch_{{ elastic_version }}_amd64.deb"
+        state: absent
+
+# master node
+- hosts: master-node01
+  roles:
+    - role: elastic.elasticsearch
+  vars:
+    es_version: "{{ elastic_version }}"
+    es_heap_size: 1g
+    es_data_dirs:
+      - "/data/elasticsearch"
+    es_config:
+      cluster.name: "iac-cluster-logs"
+      cluster.initial_master_nodes: "192.168.36.20"
+      discovery.seed_hosts: "192.168.36.20:9300"
+      http.host: "{{ es_http_host }}"
+      http.port: "{{ es_http_port }}"
+      node.data: false
+      node.master: true
+      transport.host: "{{ es_transport_host }}"
+      transport.port: "{{ es_transport_port }}"
+      bootstrap.memory_lock: true
+    es_plugins:
+     - plugin: ingest-attachment
+
+# data node
+- hosts: data-node01
+  roles:
+    - role: elastic.elasticsearch
+  vars:
+    es_version: "{{ elastic_version }}"
+    es_data_dirs:
+      - "/data/elasticsearch"
+    es_config:
+      cluster.name: "iac-cluster-logs"
+      cluster.initial_master_nodes: "192.168.36.20"
+      discovery.seed_hosts: "192.168.36.20:9300"
+      http.host: "{{ es_http_host }}"
+      http.port: "{{ es_http_port }}"
+      node.data: true
+      node.master: false
+      transport.host: "{{ es_transport_host }}"
+      transport.port: "{{ es_transport_port }}"
+      bootstrap.memory_lock: false
+    es_plugins:
+      - plugin: ingest-attachment
+
+# data node
+- hosts: data-node02
+  roles:
+    - role: elastic.elasticsearch
+  vars:
+    es_version: "{{ elastic_version }}"
+    es_data_dirs:
+      - "/data/elasticsearch"    
+    es_config:
+      cluster.name: "iac-cluster-logs"
+      discovery.seed_hosts: "192.168.36.20:9300"
+      http.host: "{{ es_http_host }}"
+      http.port: "{{ es_http_port }}"
+      node.data: true
+      node.master: false
+      transport.host: "{{ es_transport_host }}"
+      transport.port: "{{ es_transport_port }}"
+      bootstrap.memory_lock: false
+    es_plugins:
+      - plugin: ingest-attachment
+
+
+# apply fluentd configuration
+- hosts: elasticsearch-logs
+  become: true
+  roles:
+    - role: geerlingguy.fluentd
+  post_tasks:
+    - name: syslog write to fluentd socket, change config
+      ansible.builtin.lineinfile:
+        path: /etc/rsyslog.conf
+        line: "*.* @127.0.0.1:5140"
+    - name: syslog write to fluentd socket, restart service
+      ansible.builtin.service:
+        name: rsyslog
+        state: restarted

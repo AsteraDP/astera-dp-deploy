@@ -1,0 +1,66 @@
+roles:
+  - src: https://github.com/AsteraDP/astera-dp-ambari
+    scm: git
+    version: master
+  - src: https://github.com/AsteraDP/astera-dp-airflow
+    scm: git
+    version: master
+  - src: https://github.com/AsteraDP/astera-dp-arenadata
+    scm: git
+    version: master
+  - src: https://github.com/AsteraDP/astera-dp-datahub
+    scm: git
+    version: master
+  - src: https://github.com/AsteraDP/astera-dp-elasticsearch
+    scm: git
+    version: master
+  - src: https://github.com/AsteraDP/astera-dp-fluentd
+    scm: git
+    version: master
+  - src: https://github.com/AsteraDP/astera-dp-gitlab
+    scm: git
+    version: master
+  - src: https://github.com/AsteraDP/astera-dp-gitlab-runner
+    scm: git
+    version: master
+  - src: https://github.com/AsteraDP/astera-dp-grafana
+    scm: git
+    version: master
+  - src: https://github.com/AsteraDP/astera-dp-java
+    scm: git
+    version: master
+  - src: https://github.com/AsteraDP/astera-dp-jupyterhub
+    scm: git
+    version: master
+  - src: https://github.com/AsteraDP/astera-dp-kafka
+    scm: git
+    version: master
+  - src: https://github.com/AsteraDP/astera-dp-keycloak
+    scm: git
+    version: master
+  - src: https://github.com/AsteraDP/astera-dp-kibana
+    scm: git
+    version: master
+  - src: https://github.com/AsteraDP/astera-dp-node-exporter
+    scm: git
+    version: master
+  - src: https://github.com/AsteraDP/astera-dp-portainer
+    scm: git
+    version: master
+  - src: https://github.com/AsteraDP/astera-dp-prometheus
+    scm: git
+    version: master
+  - src: https://github.com/AsteraDP/astera-dp-vault
+    scm: git
+    version: master
+  - src: https://github.com/AsteraDP/astera-dp-zookeeper
+    scm: git
+    version: master
+
+collections:
+  - name: freeipa.ansible_freeipa
+    version: 1.8.4
+  - name: confluent.platform
+    version: 7.3.1
+  - name: community.postgresql
+    version: 2.3.2

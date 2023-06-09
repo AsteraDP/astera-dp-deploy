@@ -1,0 +1,69 @@
+---
+
+- name: Apply common configuration
+  hosts:
+    - ambari-server
+    - ambari-agent
+  become: true
+  become_user: root
+  roles:
+    - common
+    - iac-ansible-hosts
+    - iac-ansible-node-exporter
+
+- name: Prepare ambari-server
+  hosts:
+    - ambari-server
+  become: true
+  become_user: root
+  tasks:
+    - name: Install ambari server package
+      ansible.builtin.yum:
+        name: ambari-server
+        state: present
+    - name: Check ambari-server status
+      ansible.builtin.command:
+        cmd: ambari-server status
+      register: ambari_server_status
+      ignore_errors: true
+      changed_when: false
+    - name: Setup ambari server
+      ansible.builtin.command:
+        cmd: ambari-server setup -s
+      when: ambari_server_status.rc == 3
+    - name: Start ambari server
+      ansible.builtin.command:
+        cmd: ambari-server start
+      when: ambari_server_status.rc == 3
+
+- name: Prepare ambari-clients
+  hosts:
+    - ambari-agent
+  become: true
+  become_user: root
+  tasks:
+    - name: Install ambari agent package
+      ansible.builtin.yum:
+        name: ambari-agent
+        state: present
+    - name: Configure ambari-agent
+      ansible.builtin.lineinfile:
+        path: /etc/ambari-agent/conf/ambari-agent.ini
+        regexp: '^hostname='
+        line: 'hostname={{ ambari_server }}'
+      notify:
+        - Restart ambari-agent
+    - name: Get ambari-agent status
+      ansible.builtin.command:
+        cmd: ambari-agent status
+      register: ambari_agent_status
+      ignore_errors: true
+      changed_when: false
+    - name: Start ambari-agent
+      ansible.builtin.command:
+        cmd: ambari-agent start
+      when: ambari_agent_status.rc == 3
+  handlers:
+    - name: Restart ambari-agent
+      ansible.builtin.command:
+        cmd: ambari-agent restart

@@ -1,0 +1,75 @@
+# master node
+- hosts: metrics-master-node01
+  roles:
+    - role: elastic.elasticsearch
+  vars:
+    es_version: 7.15.1
+    es_heap_size: 1g
+    es_config:
+      cluster.name: "iac-cluster"
+      cluster.initial_master_nodes: "192.168.36.5"
+      discovery.seed_hosts: "192.168.36.5:9300"
+      http.host: "{{ es_http_host }}"
+      http.port: "{{ es_http_port }}"
+      node.data: false
+      node.master: true
+      transport.host: "{{ es_transport_host }}"
+      transport.port: "{{ es_transport_port }}"
+      bootstrap.memory_lock: true
+    es_plugins:
+     - plugin: ingest-attachment
+
+# data node
+- hosts: metrics-data-node01
+  roles:
+    - role: elastic.elasticsearch
+  vars:
+    es_version: 7.15.1
+    es_data_dirs:
+      - "/opt/elasticsearch"
+    es_config:
+      cluster.name: "iac-cluster"
+      cluster.initial_master_nodes: "192.168.36.5"
+      discovery.seed_hosts: "192.168.36.5:9300"
+      http.host: "{{ es_http_host }}"
+      http.port: "{{ es_http_port }}"
+      node.data: true
+      node.master: false
+      transport.host: "{{ es_transport_host }}"
+      transport.port: "{{ es_transport_port }}"
+      bootstrap.memory_lock: false
+    es_plugins:
+      - plugin: ingest-attachment
+
+# data node
+- hosts: metrics-data-node02
+  roles:
+    - role: elastic.elasticsearch
+  vars:
+    es_version: 7.15.1
+    es_config:
+      cluster.name: "iac-cluster"
+      discovery.seed_hosts: "192.168.36.5:9300"
+      http.host: "{{ es_http_host }}"
+      http.port: "{{ es_http_port }}"
+      node.data: true
+      node.master: false
+      transport.host: "{{ es_transport_host }}"
+      transport.port: "{{ es_transport_port }}"
+      bootstrap.memory_lock: false
+    es_plugins:
+      - plugin: ingest-attachment
+# apply fluentd configuration
+- hosts: elasticsearch
+  become: true
+  roles:
+    - role: geerlingguy.fluentd
+  post_tasks:
+    - name: syslog write to fluentd socket, change config
+      ansible.builtin.lineinfile:
+        path: /etc/rsyslog.conf
+        line: "*.* @127.0.0.1:5140"
+    - name: syslog write to fluentd socket, restart service
+      ansible.builtin.service:
+        name: rsyslog
+        state: restarted

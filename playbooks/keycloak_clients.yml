@@ -1,0 +1,55 @@
+---
+
+- name: "Create Token for service Keycloak"
+  uri:
+    url: "{{ keycloak_base_url }}/auth/realms/master/protocol/openid-connect/token"
+    method: POST
+    body_format: form-urlencoded
+    body:
+      username: "{{ keycloak_admin_user }}"
+      password: "{{ keycloak_admin_password }}"
+      grant_type: "password"
+      client_id: "admin-cli"
+  register: keycloak_token
+
+- name: Find out, if client for service Keycloak exists
+  uri:  
+    url: "{{ keycloak_base_url }}/auth/admin/realms/{{ keycloak_realm_name }}/clients?search=true&clientId={{ item.client_id }}"
+    method: GET
+    status_code:
+     - 200
+     - 404
+    headers:
+      Accept: "application/json"
+      Authorization: "Bearer {{ keycloak_token.json.access_token }}"
+  register: keycloak_current_clients
+
+- name: Create client if not exist
+  uri:
+    url: "{{ keycloak_base_url }}/auth/admin/realms/{{ keycloak_realm_name }}/clients"
+    method: POST
+    remote_src: "no"
+    body: "{{ lookup('template', '{{ item.export_file }}', template_vars={'base_url': '{{ item.base_url }}', 'secret': '{{ item.secret }}' } ) }}"
+    body_format: json
+    status_code:
+      - 201
+    headers:
+      Content-type: "application/json"
+      Accept: "application/json"
+      Authorization: "Bearer {{ keycloak_token.json.access_token }}"
+  when: keycloak_current_clients["json"] | length == 0
+
+- name: Update client if exist
+  uri:
+    url: "{{ keycloak_base_url }}/auth/admin/realms/{{ keycloak_realm_name }}/clients/{{ keycloak_current_clients['json'][0]['id'] }} "
+    method: PUT
+    remote_src: "no"
+    body: "{{ lookup('template', '{{ item.export_file }}', template_vars={'base_url': '{{ item.base_url }}', 'secret': '{{ item.secret }}' } ) }}"
+    body_format: json
+    status_code:
+      - 204
+    headers:
+      Content-type: "application/json"
+      Accept: "application/json"
+      Authorization: "Bearer {{ keycloak_token.json.access_token }}"
+  when: keycloak_current_clients["json"] | length == 1

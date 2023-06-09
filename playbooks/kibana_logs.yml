@@ -1,0 +1,35 @@
+---
+
+- name: apply common configuration
+  hosts:
+    - monitoring-server
+  become: true
+  become_user: root
+  roles:
+    - common
+    - trombik.hosts
+    - geerlingguy.docker
+  post_tasks:
+    - name: add td-agent user to proper groups
+      user:
+        name: "{{ fluentd_user }}"
+        groups: adm
+        append: yes
+    - name: restart the td-agent service
+      systemd:
+        state: restarted
+        name: td-agent
+  tags:
+    - common
+    - hosts
+    - docker
+
+- name: apply kibana configuration
+  hosts:
+    - monitoring-server
+  become: true
+  become_user: root
+  roles:
+    - astera-dp-kibana
+  tags:
+    - kibana

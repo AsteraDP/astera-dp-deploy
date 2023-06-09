@@ -1,0 +1,29 @@
+---
+
+- name: apply common configuration
+  hosts:
+    - hdp-datalake
+  become: true
+  become_user: root
+  roles:
+    - common
+    - trombik.hosts
+
+- name: apply hadoop configuration
+  hosts:
+    - hdp-datalake
+  become: true
+  become_user: root
+  roles:
+    - geerlingguy.java
+    - iac-ansible-hadoop
+    - geerlingguy.fluentd
+  post_tasks:
+    - name: syslog write to fluentd socket, change config
+      ansible.builtin.lineinfile:
+        path: /etc/rsyslog.conf
+        line: "*.* @127.0.0.1:5140"
+    - name: syslog write to fluentd socket, restart service
+      ansible.builtin.service:
+        name: rsyslog
+        state: restarted

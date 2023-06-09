@@ -1,0 +1,13 @@
+---
+
+- name: apply common configuration
+  hosts:
+    - exporters
+  become: true
+  become_user: root
+  vars:
+    hadoop_exporter: yes
+  roles:
+    - common
+    - geerlingguy.docker
+    - astera-dp-exporters

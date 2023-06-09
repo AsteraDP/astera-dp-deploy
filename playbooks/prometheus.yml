@@ -1,0 +1,36 @@
+---
+
+- name: Apply common configuration
+  hosts:
+    - mon-db
+  become: true
+  become_user: root
+  roles:
+    - common
+    - astera-dp-fluentd
+  post_tasks:
+    - name: syslog write to fluentd socket, change config
+      ansible.builtin.lineinfile:
+        path: /etc/rsyslog.conf
+        line: "*.* @127.0.0.1:5140"
+    - name: syslog write to fluentd socket, restart service
+      ansible.builtin.service:
+        name: rsyslog
+        state: restarted
+  post_tasks:
+    - name: add td-agent user to proper groups
+      user:
+        name: "{{ fluentd_user }}"
+        groups: adm,grafana
+        append: yes
+
+- name: Apply prometheus and grafana configuration
+  hosts:
+    - mon-db
+  become: true
+  become_user: root
+  roles:
+    - astera-dp-prometheus
+    - astera-dp-grafana
+    - astera-dp-alertmanager
+    - astera-dp-blackbox-exporter

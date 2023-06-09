@@ -1,0 +1,19 @@
+---
+
+- name: apply common configuration
+  hosts:
+    - nifi-nodes
+  become: true
+  become_user: root
+  roles:
+    - common
+    - trombik.hosts
+
+- name: apply spark configuration
+  hosts:
+    - nifi-nodes
+  become: true
+  become_user: root
+  roles:
+    - geerlingguy.java
+    - iac-ansible-nifi

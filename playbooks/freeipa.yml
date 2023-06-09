@@ -1,0 +1,22 @@
+---
+
+- name: apply common configuration
+  hosts: ipaservers
+  become: true
+  become_user: root
+  roles:
+    - trombik.hosts
+
+- name: install freeipa server
+  become: true
+  become_user: root
+  hosts: ipaservers
+  roles:
+    - role: freeipa.ansible_freeipa.ipaserver
+      state: present
+  post_tasks:
+    - name: add ldap groups
+      freeipa.ansible_freeipa.iparole:
+        name: "{{ item }}"
+        ipaadmin_password: "{{ ipaadmin_password }}"
+      loop: "{{ ipagroups }}"

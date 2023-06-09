@@ -1,0 +1,38 @@
+---
+
+- name: apply common configuration
+  # vars_files:
+  #   - ../environments/dev/group_vars/keycloak/vars.yml
+  hosts:
+    - workflow
+  vars:
+    client: "{{ keycloak_clients | selectattr('client_id', 'equalto', 'amundsen') | first }}"
+    amundsen_oidc_secret: "{{ client.secret }}"
+    amundsen_oidc_scopes: "openid email profile"
+    amundsen_oidc_client_id: "amundsen"
+    amundsen_oidc_config_url: "{{ keycloak_base_url }}/auth/realms/{{ keycloak_realm_name }}/.well-known/openid-configuration"
+  become: true
+  become_user: root
+  roles:
+    - common
+
+    - geerlingguy.docker
+    - astera-dp-fluentd
+  post_tasks:
+    - name: syslog write to fluentd socket, change config
+      ansible.builtin.lineinfile:
+        path: /etc/rsyslog.conf
+        line: "*.* @127.0.0.1:5140"
+    - name: syslog write to fluentd socket, restart service
+      ansible.builtin.service:
+        name: rsyslog
+        state: restarted
+
+- name: install airflow
+  hosts:
+    - workflow
+  become: true
+  become_user: root
+  roles:
+    - astera-dp-java
+    - astera-dp-airflow

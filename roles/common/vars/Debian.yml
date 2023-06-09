@@ -1,0 +1,11 @@
+---
+  DEFAULT_PACKAGES:
+    - htop
+    - python3-docker
+    - make
+    - gcc
+    # - mc
+    # - vim
+    # - git
+    # - python3
+    # - python3-pip
